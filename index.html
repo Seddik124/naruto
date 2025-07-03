@@ -1,0 +1,482 @@
+
+
+<!--
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infirmier Virtuel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" />
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(145deg, #fdf2f8, #fce7f3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .chat-box {
+      background-color: white;
+      width: 100%;
+      max-width: 500px;
+      height: 80vh;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .header {
+      background: linear-gradient(90deg, #ec4899, #f43f5e);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 16px;
+      line-height: 1.4;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.4s ease-in;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color: #fce7f3;
+    }
+
+    .user {
+      align-self: flex-end;
+      background-color: #ec4899;
+      color: white;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 1rem;
+      gap: 0.5rem;
+      border-top: 1px solid #eee;
+      background: #fff;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: none;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #ec4899;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #db2777;
+    }
+
+
+    .typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-start;
+  height: 1rem;
+}
+
+.typing span {
+  width: 8px;
+  height: 8px;
+  background: #ec4899;
+  border-radius: 50%;
+  animation: blink 1s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.9); }
+  40% { opacity: 1; transform: scale(1.1); }
+}
+
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-box">
+    <div class="header">Infirmier Virtuel</div>
+    <div class="messages" id="messages">
+      
+    </div>
+    <div class="input-area">
+      <textarea id="message" rows="2" placeholder="Pose ta question..."></textarea>
+      <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <script>
+    loadHistory();
+ 
+
+    async function sendMessage() {
+      const input = document.getElementById("message");
+      const messages = document.getElementById("messages");
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const userMsg = document.createElement("div");
+      userMsg.className = "message user";
+      userMsg.textContent = msg;
+      messages.appendChild(userMsg);
+      input.value = "";
+      messages.scrollTop = messages.scrollHeight;
+
+      const botTyping = document.createElement("div");
+botTyping.className = "message bot";
+
+const typingIndicator = document.createElement("div");
+typingIndicator.className = "typing";
+
+for (let i = 0; i < 3; i++) {
+  const dot = document.createElement("span");
+  typingIndicator.appendChild(dot);
+}
+
+function loadHistory() {
+  const messages = document.getElementById("messages");
+  const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+  history.forEach(msg => {
+    const div = document.createElement("div");
+    div.className = "message " + msg.sender;
+    div.textContent = msg.text;
+    messages.appendChild(div);
+  });
+  messages.scrollTop = messages.scrollHeight;
+}
+
+
+botTyping.appendChild(typingIndicator);
+
+      messages.appendChild(botTyping);
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg })
+        });
+
+        const data = await res.json();
+        botTyping.remove();
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "message bot";
+        botMsg.textContent = data.response || "Erreur de réponse";
+        messages.appendChild(botMsg);
+        messages.scrollTop = messages.scrollHeight;
+      } catch (e) {
+        botTyping.remove();
+        const errorMsg = document.createElement("div");
+        errorMsg.className = "message bot";
+        errorMsg.textContent = "Erreur de connexion au serveur.";
+        messages.appendChild(errorMsg);
+      }
+      }
+      
+  </script>
+  
+  
+</body>
+</html>
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Infirmier Virtuel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(145deg, #fdf2f8, #fce7f3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .chat-box {
+      background-color: white;
+      width: 100%;
+      max-width: 500px;
+      height: 80vh;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .header {
+      background: linear-gradient(90deg, #ec4899, #f43f5e);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 16px;
+      line-height: 1.4;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.4s ease-in;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color: #fce7f3;
+    }
+
+    .user {
+      align-self: flex-end;
+      background-color: #ec4899;
+      color: white;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 1rem;
+      gap: 0.5rem;
+      border-top: 1px solid #eee;
+      background: #fff;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: none;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #ec4899;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #db2777;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .typing {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      justify-content: flex-start;
+      height: 1rem;
+    }
+
+    .typing span {
+      width: 8px;
+      height: 8px;
+      background: #ec4899;
+      border-radius: 50%;
+      animation: blink 1s infinite ease-in-out;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.9); }
+      40% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .reset-btn {
+      margin-top: 1rem;
+      background-color: transparent;
+      color: #ec4899;
+      border: 1px solid #ec4899;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .reset-btn:hover {
+      background-color: #ec4899;
+      color: white;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="chat-box">
+    <div class="header">bot</div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <textarea id="message" rows="2" placeholder="Pose ta question..."></textarea>
+      <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="clearHistory()">🗑 Effacer l’historique</button>
+
+  <script>
+    loadHistory();
+
+    async function sendMessage() {
+      const input = document.getElementById("message");
+      const messages = document.getElementById("messages");
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const userMsg = document.createElement("div");
+      userMsg.className = "message user";
+      userMsg.textContent = msg;
+      messages.appendChild(userMsg);
+      input.value = "";
+      messages.scrollTop = messages.scrollHeight;
+
+      // Sauvegarde dans l'historique
+      saveMessage("user", msg);
+
+      // Animation de chargement
+      const botTyping = document.createElement("div");
+      botTyping.className = "message bot";
+      const typingIndicator = document.createElement("div");
+      typingIndicator.className = "typing";
+      for (let i = 0; i < 3; i++) {
+        const dot = document.createElement("span");
+        typingIndicator.appendChild(dot);
+      }
+      botTyping.appendChild(typingIndicator);
+      messages.appendChild(botTyping);
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg })
+        });
+
+        const data = await res.json();
+        botTyping.remove();
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "message bot";
+        botMsg.textContent = data.response || "Erreur de réponse";
+        messages.appendChild(botMsg);
+        messages.scrollTop = messages.scrollHeight;
+
+        // Sauvegarde réponse du bot
+        saveMessage("bot", data.response || "Erreur de réponse");
+      } catch (e) {
+        botTyping.remove();
+        const errorMsg = document.createElement("div");
+        errorMsg.className = "message bot";
+        errorMsg.textContent = "Erreur de connexion au serveur.";
+        messages.appendChild(errorMsg);
+
+        saveMessage("bot", "Erreur de connexion au serveur.");
+      }
+    }
+
+    function saveMessage(sender, text) {
+      const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+      history.push({ sender, text });
+      localStorage.setItem("chatHistory", JSON.stringify(history));
+    }
+
+    function loadHistory() {
+      const messages = document.getElementById("messages");
+      const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+      history.forEach(msg => {
+        const div = document.createElement("div");
+        div.className = "message " + msg.sender;
+        div.textContent = msg.text;
+        messages.appendChild(div);
+      });
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function clearHistory() {
+      localStorage.removeItem("chatHistory");
+      location.reload();
+    }
+  </script>
+</body>
+</html>
