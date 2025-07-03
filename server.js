@@ -29,6 +29,6 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Serveur démarré sur le port ${PORT}`);
+app.listen(process.env.PORT || 10000, () => {
+  console.log(`Serveur démarré sur le port ${process.env.PORT || 10000}`);
 });
